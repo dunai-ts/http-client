@@ -1,3 +1,7 @@
+/**
+ * @module @dunai/http-client
+ */
+
 import { Service } from '@dunai/core';
 import request from 'request';
 import { Url } from 'url';
@@ -50,7 +54,7 @@ export class HttpClient {
 
     /**
      * Root middleware, apply for all requests with all presets
-     * @private
+     * @protected
      */
     public rootMiddleware: {
         before: IHttpMiddleware[];

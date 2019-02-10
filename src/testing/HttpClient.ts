@@ -1,3 +1,7 @@
+/**
+ * @module @dunai/http-client/testing
+ */
+
 import { Request, Response } from '../Http';
 import { HttpClient } from '../HttpClient';
 

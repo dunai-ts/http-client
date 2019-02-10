@@ -4,4 +4,4 @@
  *
  * HTTP client
  */
-export * from './lib/HttpClient';
+export * from './HttpClient';

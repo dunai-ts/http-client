@@ -1,3 +1,7 @@
+/**
+ * @module @dunai/http-client
+ */
+
 import { IObject } from '@dunai/core';
 import request from 'request';
 import { Url } from 'url';

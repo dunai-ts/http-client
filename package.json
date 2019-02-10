@@ -79,7 +79,8 @@
     "tslint-config-prettier": "^1.17.0",
     "tslint-immutable": "^5.0.0",
     "typedoc": "^0.13.0",
-    "typedoc-plugin-external-module-name": "^2.0.0"
+    "typedoc-plugin-external-module-name": "^2.0.0",
+    "typescript": "^3.3.3"
   },
   "config": {
     "commitizen": {
