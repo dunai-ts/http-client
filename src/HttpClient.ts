@@ -131,11 +131,11 @@ export class HttpClient {
                 ...this.rootMiddleware.after,
             ];
 
-            const runs: {
+            const runs: Array<{
                 up: (req) => void;
                 index: number;
                 down: (req) => (res) => void;
-            }[] = middleware.map((mw, ind) => {
+            }> = middleware.map((mw, ind) => {
                 const context = {};
 
                 const index = ind + 1;
@@ -152,25 +152,29 @@ export class HttpClient {
                 };
             });
 
-            runs.unshift({
-                index: 0,
-                up   : (req) => {
-                    runs[1].up(req);
-                },
-                down : () => resolve,
-            });
-
-            const index = runs.length;
-            const up = (req) => {
-                request(req, (err, res, content) => {
-                    runs[index - 1].down(req)(Response.createFromRequestCallback(err, res, content));
+            {
+                runs.unshift({
+                    index: 0,
+                    up   : (req) => {
+                        runs[1].up(req);
+                    },
+                    down : () => resolve,
                 });
-            };
-            runs.push({
-                index,
-                up,
-                down: null,
-            });
+            }
+
+            {
+                const index = runs.length;
+                const up = (req) => {
+                    request(req, (err, res, content) => {
+                        runs[index - 1].down(req)(Response.createFromRequestCallback(err, res, content));
+                    });
+                };
+                runs.push({
+                    index,
+                    up,
+                    down: null,
+                });
+            }
 
             runs[0].up(opts);
         });

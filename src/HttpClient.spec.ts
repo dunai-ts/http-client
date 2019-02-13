@@ -214,7 +214,7 @@ describe('Middleware', () => {
                     query(req);
                 }
             });
-            Http.applyMiddleware(function (req, res, query, answer) {
+            Http.applyMiddleware((req, res, query, answer) => {
                 const text = res ? 'answer 2' : 'query 2';
                 path.push(text);
 

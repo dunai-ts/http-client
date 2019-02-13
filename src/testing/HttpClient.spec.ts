@@ -6,7 +6,7 @@ import { HttpMock } from './HttpClient';
 
 let Http: HttpClient;
 
-describe('HTTP proxy tests', () => {
+describe('HTTP mock tests', () => {
     beforeEach(() => {
         HttpMock.flush();
     });
@@ -165,8 +165,6 @@ describe('HTTP proxy tests', () => {
     describe('other', () => {
         it('Mock get remote request', async () => {
             const q = Http.get('http://example.com');
-
-            console.log(HttpMock.requests);
 
             const req = HttpMock.expectOne('get', 'http://example.com');
             req.answer(Response.createOk({
