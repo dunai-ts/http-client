@@ -5,3 +5,4 @@
  * HTTP client
  */
 export * from './HttpClient';
+export * from './Http';
