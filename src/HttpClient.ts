@@ -45,12 +45,29 @@ export class HttpClient {
 
     set config(value: IHttpConfig) { this.presets['default'] = value; }
 
-    public presets: { [name: string]: IHttpConfig } = {
+    private presets: { [name: string]: IHttpConfig } = {
         default: {},
         json   : {
             json: true,
         },
     };
+
+    public getPreset(name: string): IHttpConfig {
+
+    }
+
+
+    public setPreset(name: string, val: IHttpConfig) {
+
+    }
+
+    /**
+     * Return new HttpClient with pre configured preset
+     * @param name
+     */
+    public withPreset(name: string): HttpClient {
+
+    }
 
     /**
      * Root middleware, apply for all requests with all presets
