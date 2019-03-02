@@ -54,6 +54,15 @@ export class HttpClient {
 
     public readonly preset: string = 'default';
 
+    /**
+     * Root middleware, apply for all requests with all presets
+     * @protected
+     */
+    public rootMiddleware: {
+        before: IHttpMiddleware[];
+        after: IHttpMiddleware[];
+    } = {before: [], after: []};
+
     constructor(preset: string = 'default') {
         this.preset = preset;
     }
@@ -84,15 +93,6 @@ export class HttpClient {
             presets[preset] = {};
         return new HttpClient(preset);
     }
-
-    /**
-     * Root middleware, apply for all requests with all presets
-     * @protected
-     */
-    public rootMiddleware: {
-        before: IHttpMiddleware[];
-        after: IHttpMiddleware[];
-    } = {before: [], after: []};
 
     /**
      * Add new middle
