@@ -22,7 +22,7 @@ export class Response implements IObject {
             response.body = body;
             response.headers = res.headers;
 
-            if (res.headers['content-type'] === 'application/json') {
+            if (res.headers['content-type'] === 'application/json' && typeof body === 'string') {
                 try {
                     response.body = JSON.parse(body);
                 } catch (_) {

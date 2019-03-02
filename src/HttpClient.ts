@@ -36,37 +36,53 @@ export interface IHttpConfig extends request.CoreOptions {
     middleware?: IHttpMiddleware[];
 }
 
+const presets: { [name: string]: IHttpConfig } = {
+    default: {},
+    json   : {
+        json: true,
+    },
+};
+
 /**
  * Позволяет выполнять запросы к удаленному сервеку
  */
 @Service()
 export class HttpClient {
-    get config(): IHttpConfig { return this.presets['default']; }
-
-    set config(value: IHttpConfig) { this.presets['default'] = value; }
-
-    private presets: { [name: string]: IHttpConfig } = {
-        default: {},
-        json   : {
-            json: true,
-        },
-    };
-
-    public getPreset(name: string): IHttpConfig {
-
+    get config(): IHttpConfig {
+        return presets[this.preset];
     }
 
+    public readonly preset: string = 'default';
 
-    public setPreset(name: string, val: IHttpConfig) {
+    constructor(preset: string = 'default') {
+        this.preset = preset;
+    }
 
+    /**
+     * Get global preset configuration
+     * @param preset
+     */
+    public getPreset(preset: string): IHttpConfig {
+        return presets[preset] || null;
+    }
+
+    /**
+     * Set global preset configuration
+     * @param preset
+     * @param config
+     */
+    public setPreset(preset: string, config: IHttpConfig): void {
+        presets[preset] = config;
     }
 
     /**
      * Return new HttpClient with pre configured preset
      * @param name
      */
-    public withPreset(name: string): HttpClient {
-
+    public withPreset(preset: string): HttpClient {
+        if (!(preset in presets))
+            presets[preset] = {};
+        return new HttpClient(preset);
     }
 
     /**
@@ -85,9 +101,9 @@ export class HttpClient {
      * @param preset
      */
     public applyMiddleware(middleware: IHttpMiddleware, preset = 'default'): void {
-        if (!this.presets[preset])
-            this.presets[preset] = {};
-        const config = this.presets[preset];
+        if (!presets[preset])
+            presets[preset] = {};
+        const config = presets[preset];
         if (!Array.isArray(config.middleware))
             config.middleware = [];
         config.middleware.push(middleware);
@@ -132,7 +148,7 @@ export class HttpClient {
     public exec(method: string, url: string, body?: Body, options?: IHttpConfig | string, additional: IHttpConfig = {}): Promise<Response> {
         return new Promise((resolve, reject) => {
             const opts: IHttpConfig & request.UrlOptions = {
-                ...this.presets[typeof options === 'string' ? options : 'default'],
+                ...presets[typeof options === 'string' ? options : this.preset],
                 ...typeof options === 'object' ? options : {},
                 ...additional,
                 method,
