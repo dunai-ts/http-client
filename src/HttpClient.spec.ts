@@ -290,6 +290,42 @@ describe('HttpClient', () => {
             should(result).have.property('body').ok();
         });
 
+        it('default URL encode post data', async () => {
+            Http.setPreset('default', {
+                baseUrl: 'https://httpbin.org/delay/',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+            });
+
+            const result = await Http.post('0', {
+                foo: 'ok',
+                bar: 'success',
+            });
+
+            should(result)
+                .have.property('body')
+                .have.property('form')
+                .eql({
+                    foo: 'ok',
+                    bar: 'success',
+                });
+        });
+
+        it('default json post data', async () => {
+            const result = await Http.post('https://httpbin.org/delay/0', {
+                foo: 'ok',
+                bar: 'success',
+            }, 'json');
+
+            const data = result.body.data;
+            should(JSON.parse(data))
+                .eql({
+                    foo: 'ok',
+                    bar: 'success',
+                });
+        });
+
         it('other', async () => {
             Http.setPreset('default', {
                 baseUrl: 'https://google.com/',

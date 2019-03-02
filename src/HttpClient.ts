@@ -4,6 +4,7 @@
 
 import { Service } from '@dunai/core';
 import request from 'request';
+import querystring from 'querystring';
 import { Url } from 'url';
 import { Request, Response } from './Http';
 
@@ -198,6 +199,9 @@ export class HttpClient {
             {
                 const index = runs.length;
                 const up = (req) => {
+                    if (req.body && typeof req.body === 'object' && !req.json)
+                        req.body = querystring.stringify(req.body);
+
                     request(req, (err, res, content) => {
                         runs[index - 1].down(req)(Response.createFromRequestCallback(err, res, content));
                     });
