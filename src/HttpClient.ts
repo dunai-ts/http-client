@@ -38,9 +38,12 @@ export interface IHttpConfig extends request.CoreOptions {
 }
 
 const presets: { [name: string]: IHttpConfig } = {
-    default: {},
+    default: {
+        headers: {},
+    },
     json   : {
-        json: true,
+        headers: {},
+        json   : true,
     },
 };
 
@@ -152,6 +155,11 @@ export class HttpClient {
                 ...presets[typeof options === 'string' ? options : this.preset],
                 ...typeof options === 'object' ? options : {},
                 ...additional,
+                headers: {
+                    ...presets[typeof options === 'string' ? options : this.preset].headers,
+                    ...typeof options === 'object' && typeof options.headers === 'object' ? options.headers : {},
+                    ...typeof additional === 'object' && typeof additional.headers === 'object' ? additional.headers : {},
+                },
                 method,
                 url,
             };

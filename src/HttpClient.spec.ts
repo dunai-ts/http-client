@@ -290,7 +290,7 @@ describe('HttpClient', () => {
             should(result).have.property('body').ok();
         });
 
-        it('default URL encode post data', async () => {
+        it('default URL encode post data, merge headers', async () => {
             Http.setPreset('default', {
                 baseUrl: 'https://httpbin.org/delay/',
                 headers: {
@@ -301,10 +301,23 @@ describe('HttpClient', () => {
             const result = await Http.post('0', {
                 foo: 'ok',
                 bar: 'success',
+            }, {
+                headers: {
+                    'Content-Length': 18,
+                },
             });
 
-            should(result)
-                .have.property('body')
+            console.log(result.body);
+
+            should(result.body)
+                .have.property('headers')
+                .eql({
+                    'Host'          : 'httpbin.org',
+                    'Content-Type'  : 'application/x-www-form-urlencoded',
+                    'Content-Length': '18',
+                });
+
+            should(result.body)
                 .have.property('form')
                 .eql({
                     foo: 'ok',
