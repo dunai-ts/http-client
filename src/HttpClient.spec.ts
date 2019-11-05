@@ -2,10 +2,176 @@ import { describe, it } from 'mocha';
 import should from 'should';
 import { Request, Response } from './Http';
 import { HttpClient } from './HttpClient';
+import request = require('request');
 
 let Http: HttpClient;
 
 describe('HttpClient', () => {
+    describe('Basic usage', () => {
+        it('simple get request', async () => {
+            Http = new HttpClient();
+
+            const result = await Http.get('https://google.com/');
+
+            console.log(result.headers);
+
+            should(result).have.property('body')
+                          .ok();
+        });
+    });
+
+    describe('Proxy', () => {
+        function getProxyList(type: 'http' | 'https' | 'socks5') {
+            return new Promise<string[]>(resolve => {
+                return resolve(['alpha917:N8v2FzC@185.166.216.160:' + (type === 'socks5' ? 65234 : 65233)]);
+
+                request(
+                    'https://www.proxy-list.download/api/v1/get?type=' + type,
+                    (err, res, body) => {
+                        const httpProxyList = body.split('\n')
+                                                  .map(item => item.trim())
+                                                  .filter(item => item.length);
+
+                        for (let i = httpProxyList.length - 1; i > 0; i--) {
+                            const j          = Math.floor(Math.random() * (i + 1));
+                            const temp       = httpProxyList[i];
+                            httpProxyList[i] = httpProxyList[j];
+                            httpProxyList[j] = temp;
+                        }
+
+                        if (httpProxyList.length > 30)
+                            httpProxyList.length = 30;
+                        resolve(httpProxyList);
+                    }
+                );
+            });
+        }
+
+        it('using http proxy', async function() {
+            this.timeout(10000);
+
+            Http = new HttpClient();
+
+            Http.setPreset('default', {
+                json: true
+            });
+
+            const directRes = await Http.get('http://api.ipify.org?format=json');
+            should(directRes.statusCode).eql(200);
+            const myDirectIp = directRes.body.ip;
+
+            const proxyList = await getProxyList('http');
+            should(proxyList.length).greaterThan(0);
+            const proxy = 'http://' + proxyList[0];
+
+            console.log('Proxy:', proxy);
+
+            Http.setPreset('default', {
+                json: true,
+                proxy
+            });
+
+            const proxyRes = await Http.get('http://api.ipify.org?format=json');
+            should(proxyRes.statusCode).eql(200);
+            const proxyIp = proxyRes.body.ip;
+
+            should(proxyIp).not.eql(myDirectIp, 'IP address must not be equal');
+        });
+
+        it('using https proxy', async function() {
+            this.timeout(10000);
+
+            Http = new HttpClient();
+
+            Http.setPreset('default', {
+                json: true
+            });
+
+            const directRes = await Http.get('https://api.ipify.org?format=json');
+            should(directRes.statusCode).eql(200);
+            const myDirectIp = directRes.body.ip;
+
+            const proxyList = await getProxyList('https');
+            should(proxyList.length).greaterThan(0);
+            const proxy = 'https://' + proxyList[0];
+
+            console.log('Proxy:', proxy);
+
+            Http.setPreset('default', {
+                json     : true,
+                proxy
+            });
+
+            const proxyRes = await Http.get('https://api.ipify.org?format=json');
+            should(proxyRes.statusCode).eql(200);
+            const proxyIp = proxyRes.body.ip;
+
+            should(proxyIp).not.eql(myDirectIp, 'IP address must not be equal');
+        });
+
+        it('using socks5+http proxy', async function() {
+            this.timeout(10000);
+
+            Http = new HttpClient();
+
+            Http.setPreset('default', {
+                json: true
+            });
+
+            const directRes = await Http.get('http://api.ipify.org?format=json');
+            should(directRes.statusCode).eql(200);
+            const myDirectIp = directRes.body.ip;
+
+            const proxyList = await getProxyList('socks5');
+            should(proxyList.length).greaterThan(0);
+            const proxy = 'socks5+http://' + proxyList[0];
+
+            console.log('Proxy:', proxy);
+
+            Http.setPreset('default', {
+                json    : true,
+                useProxy: proxy
+            });
+
+            const proxyRes = await Http.get('http://api.ipify.org?format=json');
+            should(proxyRes.statusCode).eql(200);
+            const proxyIp = proxyRes.body.ip;
+
+            should(proxyIp).not.eql(myDirectIp, 'IP address must not be equal');
+        });
+
+        it('using socks5+https proxy', async function() {
+            this.timeout(10000);
+
+            Http = new HttpClient();
+
+            Http.setPreset('default', {
+                json: true
+            });
+
+            const directRes = await Http.get('https://api.ipify.org?format=json');
+            should(directRes.statusCode).eql(200);
+            const myDirectIp = directRes.body.ip;
+
+            const proxyList = await getProxyList('socks5');
+            should(proxyList.length).greaterThan(0);
+            const proxy = 'socks5+https://' + proxyList[0];
+
+            console.log('Proxy:', proxy);
+
+            Http.setPreset('default', {
+                json    : true,
+                useProxy: proxy
+            });
+
+            const proxyRes = await Http.get('https://api.ipify.org?format=json');
+            should(proxyRes.statusCode).eql(200);
+            const proxyIp = proxyRes.body.ip;
+
+            should(proxyIp).not.eql(myDirectIp, 'IP address must not be equal');
+        });
+    });
+
     describe('Middleware', () => {
         beforeEach(() => {
             Http = new HttpClient();
@@ -13,7 +179,6 @@ describe('HttpClient', () => {
         });
 
         describe('base check', () => {
-
             it('without middleware', async () => {
                 const result = await Http.get('http://google.com');
 
@@ -23,21 +188,19 @@ describe('HttpClient', () => {
 
             it('with 1 return middleware', async () => {
                 const middleware = (req, res, query, answer) => {
-                    answer(Response.createOk({my: 'OK'}));
+                    answer(Response.createOk({ my: 'OK' }));
                 };
                 Http.applyMiddleware(middleware);
 
                 should(Http.config).eql({
-                    middleware: [
-                        middleware,
-                    ],
+                    middleware: [middleware]
                 });
 
                 const result = await Http.get('http://google.com');
 
                 should(result.statusCode).eql(200);
                 should(result.statusMessage).eql('OK');
-                should(result.body).eql({my: 'OK'});
+                should(result.body).eql({ my: 'OK' });
             });
 
             it('with 1 transparent middleware', async () => {
@@ -47,18 +210,14 @@ describe('HttpClient', () => {
                     const text = res ? 'answer 1' : 'query 1';
                     path.push(text);
 
-                    if (res)
-                        answer(res);
-                    else
-                        query(req);
+                    if (res) answer(res);
+                    else query(req);
                 };
 
                 Http.applyMiddleware(middleware);
 
                 should(Http.config).eql({
-                    middleware: [
-                        middleware,
-                    ],
+                    middleware: [middleware]
                 });
 
                 console.log(Http.config);
@@ -68,10 +227,7 @@ describe('HttpClient', () => {
                 should(result.statusCode).eql(200);
                 should(result.statusMessage).eql('OK');
 
-                should(path).eql([
-                    'query 1',
-                    'answer 1',
-                ]);
+                should(path).eql(['query 1', 'answer 1']);
             });
 
             it('with 2 transparent middleware', async () => {
@@ -81,19 +237,15 @@ describe('HttpClient', () => {
                     const text = res ? 'answer 1' : 'query 1';
                     path.push(text);
 
-                    if (res)
-                        answer(res);
-                    else
-                        query(req);
+                    if (res) answer(res);
+                    else query(req);
                 });
                 Http.applyMiddleware((req, res, query, answer) => {
                     const text = res ? 'answer 2' : 'query 2';
                     path.push(text);
 
-                    if (res)
-                        answer(res);
-                    else
-                        query(req);
+                    if (res) answer(res);
+                    else query(req);
                 });
 
                 const result = await Http.get('http://google.com');
@@ -105,7 +257,7 @@ describe('HttpClient', () => {
                     'query 1',
                     'query 2',
                     'answer 2',
-                    'answer 1',
+                    'answer 1'
                 ]);
             });
         });
@@ -115,7 +267,7 @@ describe('HttpClient', () => {
                 let run = false;
                 Http.rootMiddleware.before.push((req, res, query, answer) => {
                     run = true;
-                    answer(Response.createOk({my: 'OK'}));
+                    answer(Response.createOk({ my: 'OK' }));
                 });
 
                 const result = await Http.get('http://google.com');
@@ -123,14 +275,14 @@ describe('HttpClient', () => {
                 should(run).ok();
                 should(result.statusCode).eql(200);
                 should(result.statusMessage).eql('OK');
-                should(result.body).eql({my: 'OK'});
+                should(result.body).eql({ my: 'OK' });
             });
 
             it('after middleware', async () => {
                 let run = false;
                 Http.rootMiddleware.after.push((req, res, query, answer) => {
                     run = true;
-                    answer(Response.createOk({my: 'OK'}));
+                    answer(Response.createOk({ my: 'OK' }));
                 });
 
                 const result = await Http.get('http://google.com');
@@ -138,76 +290,84 @@ describe('HttpClient', () => {
                 should(run).ok();
                 should(result.statusCode).eql(200);
                 should(result.statusMessage).eql('OK');
-                should(result.body).eql({my: 'OK'});
+                should(result.body).eql({ my: 'OK' });
             });
 
-            it('user case: make uuid for every request and, finally, ' +
-                'add that as a header. Check header', async () => {
-                const path: string[] = [];
+            it(
+                'user case: make uuid for every request and, finally, ' +
+                'add that as a header. Check header',
+                async () => {
+                    const path: string[] = [];
 
-                Http.rootMiddleware.before.push((req, res, query, answer) => {
-                    const text = res ? 'answer before' : 'query before';
-                    path.push(text);
+                    Http.rootMiddleware.before.push(
+                        (req, res, query, answer) => {
+                            const text = res ? 'answer before' : 'query before';
+                            path.push(text);
 
-                    if (res)
-                        answer(res);
-                    else {
-                        req.uuid = 'f0fa-random-uuid-f0fa';
-                        query(req);
-                    }
-                });
+                            if (res) answer(res);
+                            else {
+                                req.uuid = 'f0fa-random-uuid-f0fa';
+                                query(req);
+                            }
+                        }
+                    );
 
-                Http.rootMiddleware.after.push(function (req: Request, res: Response, query, answer) {
-                    const text = res ? 'answer after' : 'query after';
-                    path.push(text);
+                    Http.rootMiddleware.after.push(function(
+                        req: Request,
+                        res: Response,
+                        query,
+                        answer
+                    ) {
+                        const text = res ? 'answer after' : 'query after';
+                        path.push(text);
 
-                    if (res) {
-                        res['uuid'] = this.uuid;
-                        answer(res);
-                    } else {
-                        this.uuid = req.uuid;
-                        if (!req.headers)
-                            req.headers = [];
-                        req.headers['X-uuid'] = req.uuid;
-                        query(req);
-                    }
-                });
-                Http.applyMiddleware((req, res, query, answer) => {
-                    const text = res ? 'answer 1' : 'query 1';
-                    path.push(text);
+                        if (res) {
+                            res['uuid'] = this.uuid;
+                            answer(res);
+                        } else {
+                            this.uuid = req.uuid;
+                            if (!req.headers) req.headers = [];
+                            req.headers['X-uuid'] = req.uuid;
+                            query(req);
+                        }
+                    });
+                    Http.applyMiddleware((req, res, query, answer) => {
+                        const text = res ? 'answer 1' : 'query 1';
+                        path.push(text);
 
-                    if (res)
-                        answer(res);
-                    else
-                        query(req);
-                });
+                        if (res) answer(res);
+                        else query(req);
+                    });
 
-                const result = await Http.get('https://httpbin.org/headers');
+                    const result = await Http.get(
+                        'https://httpbin.org/headers'
+                    );
 
-                should(result.statusCode).eql(200);
-                should(result.statusMessage).eql('OK');
-                should(result['uuid']).eql('f0fa-random-uuid-f0fa');
-                should(result.body).eql({
-                    'headers': {
-                        // 'Connection': 'close',
-                        'Host'  : 'httpbin.org',
-                        'X-Uuid': 'f0fa-random-uuid-f0fa',
-                    },
-                });
+                    should(result.statusCode).eql(200);
+                    should(result.statusMessage).eql('OK');
+                    should(result['uuid']).eql('f0fa-random-uuid-f0fa');
+                    should(result.body).eql({
+                        headers: {
+                            // 'Connection': 'close',
+                            Host    : 'httpbin.org',
+                            'X-Uuid': 'f0fa-random-uuid-f0fa'
+                        }
+                    });
 
-                should(path).eql([
-                    'query before',
-                    'query 1',
-                    'query after',
-                    'answer after',
-                    'answer 1',
-                    'answer before',
-                ]);
-            });
+                    should(path).eql([
+                        'query before',
+                        'query 1',
+                        'query after',
+                        'answer after',
+                        'answer 1',
+                        'answer before'
+                    ]);
+                }
+            );
         });
 
         describe('save context', () => {
-            it('with 2 transparent middleware', async function () {
+            it('with 2 transparent middleware', async function() {
                 const path: string[] = [];
 
                 const uuids: { [key: string]: number } = {};
@@ -219,7 +379,7 @@ describe('HttpClient', () => {
                     return 'uuid-' + randSalt;
                 }
 
-                Http.applyMiddleware(function (req, res, query, answer) {
+                Http.applyMiddleware(function(req, res, query, answer) {
                     const text = res ? 'answer 1' : 'query 1';
                     path.push(text);
 
@@ -237,10 +397,8 @@ describe('HttpClient', () => {
                     const text = res ? 'answer 2' : 'query 2';
                     path.push(text);
 
-                    if (res)
-                        answer(res);
-                    else
-                        query(req);
+                    if (res) answer(res);
+                    else query(req);
                 });
 
                 const result = await Http.get('http://google.com');
@@ -252,11 +410,11 @@ describe('HttpClient', () => {
                     'query 1',
                     'query 2',
                     'answer 2',
-                    'answer 1',
+                    'answer 1'
                 ]);
 
                 should(uuids).eql({
-                    'uuid-1': 0,
+                    'uuid-1': 0
                 });
 
                 should(this.uuid).undefined();
@@ -280,71 +438,80 @@ describe('HttpClient', () => {
 
         it('default', async () => {
             Http.setPreset('default', {
-                baseUrl: 'https://google.com/',
+                baseUrl: 'https://google.com/'
             });
 
             const result = await Http.get('/');
 
             console.log(result.headers);
 
-            should(result).have.property('body').ok();
+            should(result)
+            .have.property('body')
+            .ok();
         });
 
         it('default URL encode post data, merge headers', async () => {
             Http.setPreset('default', {
                 baseUrl: 'https://httpbin.org/delay/',
                 headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
             });
 
-            const result = await Http.post('0', {
-                foo: 'ok',
-                bar: 'success',
-            }, {
-                headers: {
-                    'Content-Length': 18,
+            const result = await Http.post(
+                '0',
+                {
+                    foo: 'ok',
+                    bar: 'success'
                 },
-            });
+                {
+                    headers: {
+                        'Content-Length': 18
+                    }
+                }
+            );
 
             console.log(result.body);
 
             should(result.body)
-                .have.property('headers')
-                .eql({
-                    'Host'          : 'httpbin.org',
-                    'Content-Type'  : 'application/x-www-form-urlencoded',
-                    'Content-Length': '18',
-                });
+            .have.property('headers')
+            .eql({
+                Host            : 'httpbin.org',
+                'Content-Type'  : 'application/x-www-form-urlencoded',
+                'Content-Length': '18'
+            });
 
             should(result.body)
-                .have.property('form')
-                .eql({
-                    foo: 'ok',
-                    bar: 'success',
-                });
+            .have.property('form')
+            .eql({
+                foo: 'ok',
+                bar: 'success'
+            });
         });
 
         it('default json post data', async () => {
-            const result = await Http.post('https://httpbin.org/delay/0', {
-                foo: 'ok',
-                bar: 'success',
-            }, 'json');
+            const result = await Http.post(
+                'https://httpbin.org/delay/0',
+                {
+                    foo: 'ok',
+                    bar: 'success'
+                },
+                'json'
+            );
 
             const data = result.body.data;
-            should(JSON.parse(data))
-                .eql({
-                    foo: 'ok',
-                    bar: 'success',
-                });
+            should(JSON.parse(data)).eql({
+                foo: 'ok',
+                bar: 'success'
+            });
         });
 
         it('other', async () => {
             Http.setPreset('default', {
-                baseUrl: 'https://google.com/',
+                baseUrl: 'https://google.com/'
             });
             Http.setPreset('other', {
-                baseUrl: 'https://httpbin.org/headers',
+                baseUrl: 'https://httpbin.org/headers'
             });
 
             const result = await Http.get('/');
@@ -353,23 +520,26 @@ describe('HttpClient', () => {
         });
 
         it('json (default preset)', async () => {
-            const result = await Http.get('https://httpbin.org/headers', 'json');
+            const result = await Http.get(
+                'https://httpbin.org/headers',
+                'json'
+            );
 
             should(result.raw.request.uri.hostname).eql('httpbin.org');
             should(result.body).eql({
                 headers: {
                     Host  : 'httpbin.org',
-                    Accept: 'application/json',
-                },
+                    Accept: 'application/json'
+                }
             });
         });
 
         it('withPreset', async () => {
             Http.setPreset('other', {
-                baseUrl: 'https://google.com/',
+                baseUrl: 'https://google.com/'
             });
             Http.setPreset('default', {
-                baseUrl: 'https://httpbin.org/headers',
+                baseUrl: 'https://httpbin.org/headers'
             });
 
             const http = Http.withPreset('other');
@@ -382,13 +552,13 @@ describe('HttpClient', () => {
 
         it('withPreset + directly set preset', async () => {
             Http.setPreset('other', {
-                baseUrl: 'https://google.com/',
+                baseUrl: 'https://google.com/'
             });
             Http.setPreset('other2', {
-                baseUrl: 'https://npmjs.com/',
+                baseUrl: 'https://npmjs.com/'
             });
             Http.setPreset('default', {
-                baseUrl: 'https://httpbin.org/headers',
+                baseUrl: 'https://httpbin.org/headers'
             });
 
             const http = Http.withPreset('other');

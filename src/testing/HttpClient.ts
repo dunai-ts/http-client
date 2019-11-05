@@ -19,12 +19,17 @@ export class HttpClientMock {
         this.middleware = this.middleware.bind(this);
     }
 
-    public middleware(request: Request, _: Response, makeQuery: (req: Request) => void, giveAnswer: (res: Response) => void) {
+    public middleware(
+        request: Request,
+        _: Response,
+        makeQuery: (req: Request) => void,
+        giveAnswer: (res: Response) => void
+    ) {
         this.requests.push({
             request,
             // next: makeQuery,
             answer: giveAnswer,
-            viewed: false,
+            viewed: false
         });
     }
 
@@ -33,21 +38,40 @@ export class HttpClientMock {
     }
 
     public expectOne(url: string | RegExp): IRequestItem;
-    public expectOne(methods: string | string[], url: string | RegExp): IRequestItem;
-    public expectOne(methods: string | string[] | RegExp, url?: string | RegExp): IRequestItem {
+    public expectOne(
+        methods: string | string[],
+        url: string | RegExp
+    ): IRequestItem;
+    public expectOne(
+        methods: string | string[] | RegExp,
+        url?: string | RegExp
+    ): IRequestItem {
         if (url === void 0)
             return this.expectRequests([], methods as string | RegExp, 1, 1)[0];
         else
-            return this.expectRequests(typeof methods === 'string' ? [methods] : methods as string[], url, 1, 1)[0];
+            return this.expectRequests(
+                typeof methods === 'string' ? [methods] : (methods as string[]),
+                url,
+                1,
+                1
+            )[0];
     }
 
     public expectNone(url?: string | RegExp): void;
     public expectNone(methods: string | string[], url: string | RegExp): void;
-    public expectNone(methods: string | string[] | RegExp, url?: string | RegExp): void {
+    public expectNone(
+        methods: string | string[] | RegExp,
+        url?: string | RegExp
+    ): void {
         if (url === void 0)
             this.expectRequests([], methods as string | RegExp, 0, 0);
         else
-            this.expectRequests(typeof methods === 'string' ? [methods] : methods as string[], url, 0, 0);
+            this.expectRequests(
+                typeof methods === 'string' ? [methods] : (methods as string[]),
+                url,
+                0,
+                0
+            );
     }
 
     public expectNoRequests(): void {
@@ -55,25 +79,30 @@ export class HttpClientMock {
             throw new Error('More items than it should be');
     }
 
-    public expectRequests(methods: string[], url: string | RegExp, min = 0, max = Infinity): IRequestItem[] {
-        const items: IRequestItem[] = this.requests
-            .filter(item => {
-                if (methods.length && methods.indexOf(item.request.method.toLowerCase()) === -1)
-                    return false;
+    public expectRequests(
+        methods: string[],
+        url: string | RegExp,
+        min = 0,
+        max = Infinity
+    ): IRequestItem[] {
+        const items: IRequestItem[] = this.requests.filter(item => {
+            if (
+                methods.length &&
+                methods.indexOf(item.request.method.toLowerCase()) === -1
+            )
+                return false;
 
-                if (typeof item.request.url === 'string')
-                    if (!item.request.url.match(url))
-                        return false;
+            if (typeof item.request.url === 'string')
+                if (!item.request.url.match(url)) return false;
 
-                return true;
-            });
+            return true;
+        });
 
         if (items.length < min)
             throw new Error('Elements less than it should be');
-        if (items.length > max)
-            throw new Error('More items than it should be');
+        if (items.length > max) throw new Error('More items than it should be');
 
-        items.forEach(item => item.viewed = true);
+        items.forEach(item => (item.viewed = true));
 
         return items;
     }

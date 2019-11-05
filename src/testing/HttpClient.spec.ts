@@ -88,13 +88,15 @@ describe('HTTP mock tests', () => {
             });
 
             it('1..2', () => {
-                should(() => HttpMock.expectRequests([], /.*/, 1, 2))
-                    .throwError('More items than it should be');
+                should(() =>
+                    HttpMock.expectRequests([], /.*/, 1, 2)
+                ).throwError('More items than it should be');
             });
 
             it('5..7', () => {
-                should(() => HttpMock.expectRequests([], /.*/, 5, 7))
-                    .throwError('Elements less than it should be');
+                should(() =>
+                    HttpMock.expectRequests([], /.*/, 5, 7)
+                ).throwError('Elements less than it should be');
             });
         });
 
@@ -105,41 +107,44 @@ describe('HTTP mock tests', () => {
             });
 
             it('expectOne (more 1)', () => {
-                should(() => HttpMock.expectOne([], 'google.com'))
-                    .throw('More items than it should be');
+                should(() => HttpMock.expectOne([], 'google.com')).throw(
+                    'More items than it should be'
+                );
             });
 
             it('expectNoRequests', () => {
-                should(() => HttpMock.expectNoRequests())
-                    .throw('More items than it should be');
+                should(() => HttpMock.expectNoRequests()).throw(
+                    'More items than it should be'
+                );
             });
 
             it('expectNoRequests (negative)', () => {
                 HttpMock.requests.length = 0;
 
-                should(() => HttpMock.expectNoRequests())
-                    .not.throwError('Elements less than it should be');
+                should(() => HttpMock.expectNoRequests()).not.throwError(
+                    'Elements less than it should be'
+                );
             });
 
             it('expectNone', () => {
-                should(() => HttpMock.expectNone([], 'yahoo'))
-                    .not.throw();
+                should(() => HttpMock.expectNone([], 'yahoo')).not.throw();
             });
 
             it('expectNone (negative)', () => {
-                should(() => HttpMock.expectNone([], 'sdf'))
-                    .throw('More items than it should be');
+                should(() => HttpMock.expectNone([], 'sdf')).throw(
+                    'More items than it should be'
+                );
             });
 
             it('expectNone at all', () => {
                 HttpMock.flush();
-                should(() => HttpMock.expectNone())
-                    .not.throw();
+                should(() => HttpMock.expectNone()).not.throw();
             });
 
             it('expectNone at all (negative)', () => {
-                should(() => HttpMock.expectNone())
-                    .throw('More items than it should be');
+                should(() => HttpMock.expectNone()).throw(
+                    'More items than it should be'
+                );
             });
         });
     });
@@ -151,14 +156,14 @@ describe('HTTP mock tests', () => {
             should(HttpMock.requests[0]).have.property('viewed', false);
 
             const req = HttpMock.expectOne('https://google.com');
-            req.answer(Response.createOk({ok: 'OK'}));
+            req.answer(Response.createOk({ ok: 'OK' }));
 
             should(HttpMock.requests).have.length(1);
             should(HttpMock.requests[0]).have.property('viewed', true);
 
             const res = await q;
 
-            should(res.body).eql({ok: 'OK'});
+            should(res.body).eql({ ok: 'OK' });
         });
     });
 
@@ -167,9 +172,11 @@ describe('HTTP mock tests', () => {
             const q = Http.get('http://example.com');
 
             const req = HttpMock.expectOne('get', 'http://example.com');
-            req.answer(Response.createOk({
-                ok: true,
-            }));
+            req.answer(
+                Response.createOk({
+                    ok: true
+                })
+            );
 
             const result = await q;
 
@@ -180,13 +187,15 @@ describe('HTTP mock tests', () => {
         });
 
         it('Mock post remote request', async () => {
-            const q = Http.post('http://example.com', {data: 'value'});
+            const q = Http.post('http://example.com', { data: 'value' });
 
             const req = HttpMock.expectOne('post', 'http://example.com');
-            req.answer(Response.createOk({
-                ok  : true,
-                data: req.request.body['data'],
-            }));
+            req.answer(
+                Response.createOk({
+                    ok: true,
+                    data: req.request.body['data']
+                })
+            );
             const result = await q;
             should(result.statusCode).be.equal(200);
             should(result.statusMessage).be.equal('OK');
